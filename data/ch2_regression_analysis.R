@@ -68,7 +68,7 @@ plot(lm3, which = c(1))
 # QQ plot (theoretical quantiles)
 plot(lm3, which = c(2))
 
-#Leverage
+#Residuals vs. Leverage
 plot(lm3, which = c(5))
 
 # The residuals vs. fitted values are equally distributed and do not demonsrate any pattern.
