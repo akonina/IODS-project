@@ -33,6 +33,15 @@ summary(learning2014$points)
 ``` 
 The exam grades varied from 7 points to 33 with a mean of 22.72
 
+```{r} 
+# Later amendments: before starting any analysis, it is good to look at the probability plots of each variable.
+# Options:
+# 1. qqnorm( ) function to create a Quantile-Quantile plot evaluating the fit of sample data to the normal distribution.
+# 2. The fitdistr( ) function in the MASS package provides maximum-likelihood fitting of univariate distributions. The format is fitdistr(x, densityfunction) where x is the sample data and densityfunction is one of the following: "beta", "cauchy", "chi-squared", "exponential", "f", "gamma", "geometric", "log-normal", "lognormal", "logistic", "negative binomial", "normal", "Poisson", "t" or "weibull".
+# 3. For other, see: https://cran.r-project.org/doc/contrib/Ricci-distributions-en.pdf
+
+``` 
+
 The next step is to do the graphical exploration.
 ```{r} 
 library(GGally)
