@@ -1,4 +1,6 @@
 # Chapter 2. Regression and model validation
+
+# Tabset {.tabset .tabset-fade .tabset-pills} ## Data exploration
 Let's start by reading the dataset that we previously wrangled.
 ```{r} 
 learning2014 <- read.csv("./data/learning2014.csv")
@@ -32,16 +34,6 @@ Their attitude, as well as the questions pertaining to deep, surface and strateg
 summary(learning2014$points)
 ``` 
 The exam grades varied from 7 points to 33 with a mean of 22.72
-
-```{r} 
-# Later amendments: before starting any analysis, it is good to look at the probability plots of each variable.
-# Options:
-# 1. qqnorm( ) function to create a Quantile-Quantile plot evaluating the fit of sample data to the normal distribution.
-# 2. The fitdistr( ) function in the MASS package provides maximum-likelihood fitting of univariate distributions. The format is fitdistr(x, densityfunction) where x is the sample data and densityfunction is one of the following: "beta", "cauchy", "chi-squared", "exponential", "f", "gamma", "geometric", "log-normal", "lognormal", "logistic", "negative binomial", "normal", "Poisson", "t" or "weibull".
-# 3. For other, see: https://cran.r-project.org/doc/contrib/Ricci-distributions-en.pdf
-
-``` 
-
 The next step is to do the graphical exploration.
 ```{r} 
 library(GGally)
@@ -51,8 +43,55 @@ p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = lis
 p
 ``` 
 
-The plot demonstrates paired correlations between all the variables except gender. It is a binary variable and should not be simply correlated with continuous ones. Here gender is used in all of the paired plots for a more detailed visual analysis. We can also see the boxplots for eacch variable and analyze them visually. None of the variables contains an alarming amount of outliers except for age.
+The plot demonstrates paired correlations between all the variables except gender. It is a binary variable and should not be simply correlated with continuous ones. Here gender is used in all of the paired plots for a more detailed visual analysis. We can also see the boxplots for each variable and analyze them visually. None of the variables contains an alarming amount of outliers except for age.
 
+## Probability plots
+Before starting any analysis, it is good to look at the probability plots of each variable.
+Options:
+1. qqnorm( ) function to create a Quantile-Quantile plot evaluating the fit of sample data to the normal distribution.
+2. The fitdistr( ) function in the MASS package provides maximum-likelihood fitting of univariate distributions. The format is fitdistr(x, densityfunction) where x is the sample data and densityfunction is one of the following: "beta", "cauchy", "chi-squared", "exponential", "f", "gamma", "geometric", "log-normal", "lognormal", "logistic", "negative binomial", "normal", "Poisson", "t" or "weibull".
+3. For other, see: https://cran.r-project.org/doc/contrib/Ricci-distributions-en.pdf
+
+If the distribution does satisfy the normality criterion, log-transform the variable to identify outliers more clearly.
+Delete those observations.
+Try step 1 again.
+
+## Boxplots for numerical variables
+library(ggplot2)
+1. Create a dummy variable with the same mean and standard deviation, but normally distributed, for comparison purposes:
+absences_norm <- rnorm(200,mean=mean(absences, na.rm=TRUE), sd=sd(absences, na.rm=TRUE))
+2. Plot the two variables side by side
+boxplot(absences, absences_norm, main = "Boxplots of the absences variable: actual distribution vs. normal", at = c(1,2), names = c("absences","absences_norm"), las = 2, col = c("pink","yellow"), horizontal = TRUE)
+
+## Сorrelation plots
+library(tidyverse), library(MASS).
+1. Calculate the correlation matrix and round it
+cor_matrix <- cor(Boston) 
+cor_matrix_r <- cor_matrix %>% round(2)  <- до двух цифр после запятой
+2. Visualize the correlation matrix
+corrplot(cor_matrix_r, method="circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+
+## Сenter and standardize numerical variables
+scale()
+boston_scaled <- scale(Boston), mean = 0 <- центрирует вокруг нуля
+class(boston_scaled) <- в результате шкалирования получается матрица
+boston_scaled <- as.data.frame(boston_scaled) <- меняем матрицу на data frame.
+
+## Create a categorical variable form a numerical one
+*Quantiles*
+1. Create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+bins
+2. Create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low","med_low","med_high","high"))
+3. Look at the table of the new factor crime
+table(crime)
+4. Remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+5. Add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+
+## Linear regression
 We are now interested in exploring whether we can explain the student exam grade by relating it with other available variables. A multiple regression model is fitted with a response variable 'points' and explanatory variables 'attitude', 'stra' and 'surf'.
 ```{r} 
 lm <- lm(points ~ attitude + stra + surf, data = learning2014)
@@ -78,7 +117,10 @@ lm3
 summary(lm3)
 ``` 
 
-The fitted model explains 19% of the variance, the attitude is concluded to be a statistically significant predictor for the exam grade. Next, to make sure that the model is fitted correctly, residuals analysis is due.
+The fitted model explains 19% of the variance, the attitude is concluded to be a statistically significant predictor for the exam grade.
+
+## Residual analysis
+Next, to make sure that the model is fitted correctly, residuals analysis is due.
 
 Residuals vs. Fitted values
 ```{r} 
@@ -97,3 +139,19 @@ The residuals vs. fitted values are equally distributed and do not demonsrate an
 The QQ plot shows a nice fit along the line with no cause for concern.
 The Leverage plot does nor show any particular outliers.  
 The model is valid.
+
+## Prediction. Train and test sets
+1. Determine the number of rows in the dataset 
+n <- nrow(boston_scaled)
+2. Choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+3. Create train set
+train <- boston_scaled[ind,]
+4. Create test set by substraction the train set
+test <- boston_scaled[-ind,]
+5. Save the correct classes from test data
+correct_classes <- test$crime (any variable used for prediction)
+6. Remove this variable from test data
+test <- dplyr::select(test, -crime)
+
+### End tabset

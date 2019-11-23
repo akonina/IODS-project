@@ -247,7 +247,11 @@ $(document).ready(function () {
 # Options:
 # 1. qqnorm( ) function to create a Quantile-Quantile plot evaluating the fit of sample data to the normal distribution.
 # 2. The fitdistr( ) function in the MASS package provides maximum-likelihood fitting of univariate distributions. The format is fitdistr(x, densityfunction) where x is the sample data and densityfunction is one of the following: &quot;beta&quot;, &quot;cauchy&quot;, &quot;chi-squared&quot;, &quot;exponential&quot;, &quot;f&quot;, &quot;gamma&quot;, &quot;geometric&quot;, &quot;log-normal&quot;, &quot;lognormal&quot;, &quot;logistic&quot;, &quot;negative binomial&quot;, &quot;normal&quot;, &quot;Poisson&quot;, &quot;t&quot; or &quot;weibull&quot;.
-# 3. For other, see: https://cran.r-project.org/doc/contrib/Ricci-distributions-en.pdf</code></pre>
+# 3. For other, see: https://cran.r-project.org/doc/contrib/Ricci-distributions-en.pdf
+
+# If the distribution does satisfy the normality criterion, log-transform the variable to identify outliers more clearly.
+# Delete those observations.
+# Try step 1 again.</code></pre>
 <p>The next step is to do the graphical exploration.</p>
 <pre class="r"><code>library(GGally)</code></pre>
 <pre><code>## Loading required package: ggplot2</code></pre>
