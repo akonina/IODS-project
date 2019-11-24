@@ -7,17 +7,17 @@ output: html_document
 # Chapter 3. Logistic regression. Analysis
 
 This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades, demographic, social and school related features; it was collected by using school reports and questionnaires.
-
+  
 ```{r}
 alc <- read.csv("./data/alc.csv")
 ```
-
+  
 The dataset contains 35 variables and 382 observations pertaining to the performance, family, personal life and other information about students and their consumption of alcohol.
-
+  
 Here, I am interested in studying the relationships between **high/low alcohol consumption** and other variables in the data, namely, four of them: 'absences' (number of school absences), 'traveltime' (home to school travel time), 'goout' (going out with friends), and 'famrel' (quality of family relationships).
-
+  
 I hypothesize that the high number of absences and a lot of time with friends along with bad family relationships and short traveltime will increase odds of high alcohol consumption in students.
-
+  
 ```{r}
 library(dplyr)
 keep_columns <- c("sex", "age", "absences", "traveltime", "goout", "famrel", "high_use")
@@ -31,7 +31,7 @@ famrel <- alc$famrel
 high_use <- alc$high_use
 ```
 We have now reformatted the dataset to only keep the columns pertaining to the hypothesis and two general variables, sex and age. Now onto the graphical exploration.
-
+  
 ```{r}
 library(ggplot2)
 # create a dummy variable with the same mean and standard deviation, but normally distributed, for comparison purposes
@@ -39,26 +39,27 @@ absences_norm <- rnorm(200,mean=mean(absences, na.rm=TRUE), sd=sd(absences, na.r
 # plot the two variables side by side
 boxplot(absences, absences_norm, main = "Boxplots of the absences variable: actual distribution vs. normal", at = c(1,2), names = c("absences","absences_norm"), las = 2, col = c("pink","yellow"), horizontal = TRUE)
 ```
-First, we need to analyze the only numeric variable, the number of absences. As seen in the boxplot, the actual distribution is within normal limits (with no negative values) and with a few outliers. Before excluding those observations, we will explore other variable and try and fit the model.
+First, we need to analyze the only numeric variable, the number of absences. As seen in the boxplot, the actual distribution is within normal limits (with no negative values) and with a few outliers. Before excluding those observations, we will explore other variable and try and fit the model.  
 Now we will plot the interval variables with a scale of answers from 1 to 5.
-
+  
 ```{r}
 boxplot(traveltime, goout, famrel, main = "Boxplots of interval variables", at = c(1,2,3), names = c("travel time","time with friends", "family relationships"), las = 2, col = c("blue","violet","green"))
 ```
 The "goout" variable seems to be distributed normally, although two others are skewed in different directions. Next, we will plot each variable against the response variable and explore the dataset further.
-
+  
 ```{r}
 library(GGally)
 cross <- ggpairs(alc, mapping = aes(col = sex), lower = list(combo = wrap("facethist", bins = 20)))
 cross
 ```
-The variables have very low correlation values between themselves, so there is no risk of covariance tamperinf with the model. Now onto the model fitting.
+  
+The variables have very low correlation values between themselves, so there is no risk of covariance tamperinf with the model. Now onto the model fitting.  
 
 ```{r}
 m <- glm(high_use ~ absences + traveltime + goout + famrel, data = alc, family = "binomial")
 summary(m)
 ```
-All of the explanatory variables have a statistically significant relationship with the target variable.
+All of the explanatory variables have a statistically significant relationship with the target variable.  
 Next, we will calculate the odds ratios and confidence intervals to validate our model.
 
 ```{r}
@@ -67,11 +68,11 @@ conf_int <- confint(m) %>% exp
 cbind(odds_ratios, conf_int)
 ```
 The odds of high alcohol consumption for:
-1. absent students is from 1.03 and 1.12 higher than for attending students.
-2. students with shorter travel time to school is 1.10 to 2.19 higher than for those who have to take the long road.
-3. students who spend a lot of time with their friends is from 1.7 to 2.7 times higher for students who do not.
+1. absent students is from 1.03 and 1.12 higher than for attending students.  
+2. students with shorter travel time to school is 1.10 to 2.19 higher than for those who have to take the long road.  
+3. students who spend a lot of time with their friends is from 1.7 to 2.7 times higher for students who do not.  
 4. students with a good family situation is between 52% and 91% of the odds of students with bad family relationships.
-
+  
 To continue fitting the model, we will compare predicted and actual values.
 ```{r}
 # predict the probability of high_use
@@ -96,7 +97,8 @@ loss_func <- function(class, prob) {
 # call loss_func to compute the average number of wrong predictions in the training data
 loss_func(class = alc$high_use, prob = alc$probability)
 ```
-Quite a good result!
+
+Quite a good result!  
 Finally, we perform the 10-fold cross-validation.
 ```{r}
 library(boot)
@@ -105,4 +107,5 @@ cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]
 ```
+  
 Sliiiiightly better than 0.26 by the DataCamp model.

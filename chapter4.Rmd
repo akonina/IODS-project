@@ -1,0 +1,241 @@
+---
+title: "chapter4"
+author: "Alena Konina"
+date: "11/23/2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Chapter 4. Clustering and classification {.tabset}
+## Data wrangling
+
+The first thing in today's agenda is to load the Boston dataset from r.
+```{r}
+# loading
+library(MASS)
+data("Boston")
+
+# initial dataset exploration
+str(Boston)
+summary(Boston)
+```
+This dataset contains 506 observations over 14 variables, 2 of them interval and the other ones numerical. The indices were measured across the following variables:  
+1. 'crim' (per capita crime rate by town)  
+2. 'zn' (proportion of residential land zoned for lots over 25,000 sq.ft)  
+3. 'indus' (proportion of non-retail business acres per town)  
+4. 'chas' (Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))  
+5. 'nox' (nitrogen oxides concentration (parts per 10 million))
+6. 'rm' (average number of rooms per dwelling)  
+7. 'age' (proportion of owner-occupied units built prior to 1940)
+8. 'dis' (weighted mean of distances to five Boston employment centres)  
+9. 'rad' (index of accessibility to radial highways)
+10. 'tax' (full-value property-tax rate per \$10,000)
+11. 'ptratio' (pupil-teacher ratio by town)  
+12. 'black' (1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town)  
+13. 'lstat' (lower status of the population (percent))  
+14. 'medv' (median value of owner-occupied homes in \$1000s)  
+
+The variables have very different ranges, which probably means standartisation before the analysis. Now onto a graphical overview.  
+```{r}
+pairs(Boston)
+```
+
+A lot of variable seem to be strongly correlated. The plot for 'nox' and 'dis', for instance, are seemingly related through 1/x function. It probably makes sense since air pollution is dissipating the farther you from the city center.
+
+To check whether this is just an observation or a valid hypothesis, let's check for correlations.  
+```{r}
+# calculate the correlation matrix and round it
+cor_matrix <- cor(Boston)
+# round up to 2 digits
+cor_matrix_r <- cor_matrix
+round(cor_matrix_r, 2)
+# visualize
+library(corrplot)
+corrplot(cor_matrix_r, method="circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+```  
+  
+The hypothesis is correct, the correlation coefficient is -0.77.  
+
+## Data preparation
+
+For classification and clustering purposes, next step would be to scale the dataset to avoid skewing results.  
+```{r}
+# scaling around 0
+boston_scaled <- scale(Boston)
+
+# getting a matrix as a result
+class(boston_scaled)
+
+# transforming the matrix into a new dataset
+boston_scaled <- as.data.frame(boston_scaled)
+summary(boston_scaled)
+```  
+
+Now the variables are on the same scale with a mean of 0. In order to work with classification, we need a binary or multiclass target variable. In this instance, we are most interested in classifying neighbourhoods accroding to crime rates, that is why we will next transform the 'crim' variable into categorical one via quantiles.
+
+```{r}
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+bins
+
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low","med_low","med_high","high"))
+
+# look at the table of the new factor crime
+table(crime)
+
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+```
+
+We are done with data preparation and now can go on separating the test and training sets for further model training and validation.
+
+```{r}
+# determine the number of rows in the dataset 
+n <- nrow(boston_scaled)
+
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create a train set
+train <- boston_scaled[ind,]
+
+# create a test set by substraction of the train set
+test <- boston_scaled[-ind,]
+```
+
+All the steps in preparing the data are complete.
+
+## Linear Discriminant Analysis
+
+Fitting the Linear Discriminant Analysis to the train data:
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+lda.fit
+```  
+The mean group results demonstrate that the three variables that are mostly influencing high crime rates are the index of accessibility to radial highways (1.63), full-value property-tax rate per \$10,000 (1.51), and, interestingly, pollution rates (1.054).
+
+The linear discriminants coefficient confirm those findings for the radial highways accessaibility which is three times higher than all the other variables in the dataset.
+
+```{r}
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "black", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 3)
+```  
+
+The plot confirms the prediction for the biggest influence of accessibility to radial highways.
+
+## Prediction
+
+Next, we will test the model that we have fitted on the test set, which we have previously separated from the data.
+
+```{r}
+# save the correct classes from test data
+correct_classes <- test$crime
+
+# remove this variable from test data
+test <- dplyr::select(test, -crime)
+
+# predict classes with test data
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+```  
+
+The model looks quite adequate, there is a just a small number of mismatches in the classification.
+
+## K-means clustering
+
+Next, after trying to assign the measurements to previously determined classes, now we well turn to unsupervised methods. K-clustering begins, as usual, with loading and scaling data.
+
+```{r}
+# loading
+library(MASS)
+data("Boston")
+
+# scaling around 0
+boston_scaled <- scale(Boston)
+
+# getting a matrix as a result
+class(boston_scaled)
+
+# transforming the matrix into a new dataset
+boston_scaled <- as.data.frame(boston_scaled)
+summary(boston_scaled)
+```  
+
+After the standartisation is complete, we need to calculate the distances for the scaled data.
+
+```{r}
+# euclidean distance matrix
+dist_eu <- dist(boston_scaled)
+
+# look at the summary of the distances
+summary(dist_eu)
+```  
+
+Next, we will try out a random number of clusters.
+
+```{r}
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 10)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled, col = km$cluster)
+```  
+
+The plot looks very colourful, but is is obvious that the number of clusters is too big. Right now we will reduce it in half.
+
+```{r}
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 5)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled, col = km$cluster)
+```  
+  
+Looks better, but still confusing. It it time to more mathematical methods of identifying the right number of clusters for this dataset.
+
+```{r}
+set.seed(123)
+
+# determine the maximum number of clusters
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(boston_scaled, k)$tot.withinss})
+
+# visualize the results
+library(ggplot2)
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```  
+
+According to the total sum of squares plot, the biggest observable "elbow" is set at 2. Therefore, we will run the k-means analysis with 2 centroids.
+
+```{r}
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 2)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled, col = km$cluster)
+```  
+
+It turns out, that the most fitting number of classes for this dataset was just 2. A bit underwhelming though.
