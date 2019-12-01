@@ -67,13 +67,6 @@ pairs(learning2014[-1], col = learning2014$gender)
 p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
 p
 ``` 
-or 
-
-```{r} 
-library(tidyverse)
-library(dplyr)
-gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-``` 
 
 ## Probability plots
 Before starting any analysis, it is good to look at the probability plots of each variable.  

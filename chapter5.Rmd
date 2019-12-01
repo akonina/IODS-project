@@ -5,7 +5,7 @@ date: "12/1/2019"
 output: html_document
 ---
 
-# Dimensionality reduction techniques {.tabset}
+# Chapter 5. Dimensionality reduction techniques {.tabset}
 
 ## Data exploration
 
@@ -99,7 +99,7 @@ The current dataframe is too big for a meaningful MCA analysis to my taste, so I
 ```{r}
 # creating a subset
 keep_columns <- c("Tea", "How", "how", "sugar", "home", "breakfast", "age", "sex", "frequency")
-tea_time <- select(tea, one_of(keep_columns))
+tea_time <- dplyr::select(tea, one_of(keep_columns))
 summary(tea_time)
 str(tea_time)
 

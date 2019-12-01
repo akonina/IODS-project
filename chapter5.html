@@ -196,8 +196,8 @@ $(document).ready(function () {
 </div>
 
 
-<div id="dimensionality-reduction-techniques" class="section level1 tabset">
-<h1>Dimensionality reduction techniques</h1>
+<div id="chapter-5.-dimensionality-reduction-techniques" class="section level1 tabset">
+<h1>Chapter 5. Dimensionality reduction techniques</h1>
 <div id="data-exploration" class="section level2">
 <h2>Data exploration</h2>
 <pre class="r"><code>human &lt;- read.csv(&quot;./data/human.csv&quot;, row.names = 1)
@@ -496,7 +496,7 @@ gather(tea) %&gt;% ggplot(aes(value)) + facet_wrap(&quot;key&quot;, scales = &qu
 <p>The current dataframe is too big for a meaningful MCA analysis to my taste, so I chose nine to my best interest.</p>
 <pre class="r"><code># creating a subset
 keep_columns &lt;- c(&quot;Tea&quot;, &quot;How&quot;, &quot;how&quot;, &quot;sugar&quot;, &quot;home&quot;, &quot;breakfast&quot;, &quot;age&quot;, &quot;sex&quot;, &quot;frequency&quot;)
-tea_time &lt;- select(tea, one_of(keep_columns))
+tea_time &lt;- dplyr::select(tea, one_of(keep_columns))
 summary(tea_time)</code></pre>
 <pre><code>##         Tea         How                      how           sugar    
 ##  black    : 74   alone:195   tea bag           :170   No.sugar:155  
