@@ -1,39 +1,65 @@
-# Chapter 2. Regression and model validation {.tabset}
+# Regression and model validation {.tabset}
+
 ## Data exploration
-Let's start by reading the dataset that we previously wrangled.
+Read the data
 ```{r} 
 learning2014 <- read.csv("./data/learning2014.csv")
 ``` 
 
-For data structure, let's see
+For data structure:
 ```{r} 
 dim(learning2014)
 str(learning2014)
 head(learning2014)
 ``` 
 
-These data result form a survey conducted during an Introduction to Social Statistics course in the fall of 2014. This particular dataframe contains responses from 166 people who took the exam. There are 7 data entries for each participant: gender, age, attitude towards learning, questions related to deep learning, surface learning and strategic learning, as well as the exam grade.
+Explore the dataset
+```{r} 
+summary(learning2014)
+``` 
 
-```{r} 
-summary(learning2014$gender)
-``` 
-110 women and 56 men undertook the survey
-```{r} 
-summary(learning2014$age)
-``` 
-Their age ranged from 17 to 55 years old with a mean of 25.51
-```{r} 
-summary(learning2014$attitude)
-summary(learning2014$deep)
-summary(learning2014$stra)
-summary(learning2014$surf)
-``` 
-Their attitude, as well as the questions pertaining to deep, surface and strategic learning, were measured on a scale from 1 to 5
-```{r} 
-summary(learning2014$points)
-``` 
-The exam grades varied from 7 points to 33 with a mean of 22.72
-The next step is to do the graphical exploration.
+## Create a subset
+```
+library(dplyr)
+keep <- c("Country", "Edu2.FM", "Labo.FM", "Life.Exp", "Edu.Exp", "GNI", "Mat.Mor", "Ado.Birth", "Parli.F")
+human <- select(human, one_of(keep))
+
+```
+
+## Missing values
+
+In R, NA stands for not available, which means that the data point is missing. If a variable you wish to analyse contains missing values, there are usually two main options:  
+1. Remove the observations with missing values  
+2. Replace the missing values with actual values using an imputation technique.  
+
+Option 1:  
+```
+# print out a completeness indicator of the 'human' data
+complete.cases(human)
+
+# print out the data along with a completeness indicator as the last column
+data.frame(human[-1], comp = complete.cases(human))
+
+# filter out all rows with NA values
+human_ <- filter(human, complete.cases(human))
+```
+## Excluding observations
+```
+# look at the last 10 observations of human
+tail(human, 10)
+
+# define the last indice we want to keep
+last <- nrow(human) - 7
+
+# choose everything until the last 7 observations
+human_ <- human[1:last, ]
+
+# add countries as rownames
+rownames(human_) <- human_$Country
+```
+
+## Graphical exploration
+
 ```{r} 
 library(GGally)
 library(ggplot2)
@@ -41,8 +67,13 @@ pairs(learning2014[-1], col = learning2014$gender)
 p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
 p
 ``` 
+or 
 
-The plot demonstrates paired correlations between all the variables except gender. It is a binary variable and should not be simply correlated with continuous ones. Here gender is used in all of the paired plots for a more detailed visual analysis. We can also see the boxplots for each variable and analyze them visually. None of the variables contains an alarming amount of outliers except for age.
+```{r} 
+library(tidyverse)
+library(dplyr)
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+``` 
 
 ## Probability plots
 Before starting any analysis, it is good to look at the probability plots of each variable.  

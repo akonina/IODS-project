@@ -1,0 +1,137 @@
+---
+title: "chapter 5"
+author: "Alena Konina"
+date: "12/1/2019"
+output: html_document
+---
+
+# Dimensionality reduction techniques {.tabset}
+
+## Data exploration
+
+```{r}
+human <- read.csv("./data/human.csv", row.names = 1)
+str(human)
+summary(human)
+
+library(GGally)
+pairs <- ggpairs(human)
+pairs
+
+library(tidyverse)
+library(corrplot)
+# compute the correlation matrix and visualize it with corrplot
+cor(human) %>% corrplot()
+```
+  
+All of the variables differ dramatically in their ranges. Two of them, GNI per capita and maternal mortality right are significantly skewed to the right; others seem to be distributed more or less normally.  
+
+This dataframe contains 155 observations and 8 variables, 6 of them numerical and two interval. Based on their distributions, we can see that it's a highly intercorrelated dataset, which is perfect for the purposes of the Principal Component Analysis.  
+
+Some of the variables in the data are strongly positively or negatively correlated: for instance, maternal mortality quite logically has a strong positive correlation with adolescent women giving birth. On the other hand, maternal mortality is strongly negatively correlated with expected education.  
+
+## PCA on non-standardized data
+
+First, let's try Principal Component Analysis on non-scaled data.
+
+```{r}
+pca_human <- prcomp(human)
+pca_human
+
+# rounded percentages of variance captured by each PC
+s <- summary(pca_human)
+pca_pr <- round(100*s$importance[2,], digits = 1)
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.6, 1), col = c("grey40", "yellow"), xlab = pc_lab[1], ylab = pc_lab[2], main = (title = "PCA_non-scaled"))
+```
+  
+We can immediately see from the summary of the model and the plot that the first component takes on 100% of the variance. This is due to the difference in ranges of the variables. For instance, the GNI per capita is represented by the longest axis, clearly has the biggest standard deviation. All the arrows are sitting on the same axis as if they are fully correlated.  
+
+Therefore, this analysis cannot be really taken into account.
+
+## PCA on standardized data
+
+```{r}
+# standardize the variables
+human_std <- scale(human)
+summary(human_std)
+
+pca_human_std <- prcomp(human_std)
+pca_human_std
+
+# rounded percentages of variance captured by each PC
+s_st <- summary(pca_human_std)
+pca_pr_st <- round(100*s_st$importance[2,], digits = 1)
+
+# create object pc_lab to be used as axis labels
+pc_lab_st <- paste0(names(pca_pr_st), " (", pca_pr_st, "%)")
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human_std, choices = 1:2, cex = c(0.6, 1), col = c("grey40", "green"), xlab = pc_lab_st[1], ylab = pc_lab_st[2], main = (title = "PCA_scaled"))
+```
+
+The current analysis looks much more reliable. The countries are distibured throughout the bidimensional space. The first two principal components add up to 69.7% of the variance, typical for PCA.  
+
+Speculating about how to call the two dimensions, I would suggest "welfare" for PC1, because it collects indicators of health, social protection, and economic growth, and "participation" for PC2, since it is dealing with workforce and the participation rate. In the former, the variables mostly contributing to it are life expectancy at birth, GNI per capita, maternal maternity ratio, adolescent birth rate, expected years of education, and population with secondary education ratio. For the latter, the two main factors are representation in parliament and labor force prticipation ratio. Judging by the angles between the arrows along the two axis, the variables are closely correlated with each other. The length of the arrows became much more equal after the standardisation.  
+
+## Multiple correspondence analysis 
+
+```{r}
+library(FactoMineR)
+data(tea)
+
+dim(tea)
+str(tea)
+summary(tea)
+
+library(ggplot2)
+gather(tea) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+
+The "tea" dataset contains 300 observations and 36 variables pertaining to people's tea-taking habits, most of which are strings. Some follow a bimodal distributions, some not.  
+
+The current dataframe is too big for a meaningful MCA analysis to my taste, so I chose nine to my best interest.
+
+```{r}
+# creating a subset
+keep_columns <- c("Tea", "How", "how", "sugar", "home", "breakfast", "age", "sex", "frequency")
+tea_time <- select(tea, one_of(keep_columns))
+summary(tea_time)
+str(tea_time)
+
+library(ggplot2)
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+  
+A lot of young people and Earl Grey lovers who drink more than two cups a day (just like me).  
+Prior to performing MCA, we need to transform the variables into factors, because MCA only operates on categorical variables.  
+
+```{r}
+# prepare the data for MCA by converting all the variables to factors
+colnames(tea_time)
+tea_time$Tea <- factor(tea_time$Tea)
+tea_time$How <- factor(tea_time$How)
+tea_time$how <- factor(tea_time$how)
+tea_time$sugar <- factor(tea_time$sugar)
+tea_time$home <- factor(tea_time$home)
+tea_time$breakfast <- factor(tea_time$breakfast)
+tea_time$age <- factor(tea_time$age)
+tea_time$sex <- factor(tea_time$sex)
+tea_time$frequency <- factor(tea_time$frequency)
+
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+
+# visualize MCA
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+The MCA resulted in a quite a busy graph with not so great a level of variance coverage: just 2.84% for the first dimension and 2.49% for the second. Converting the whole age variable into a factor was not a brilliant idea either; I should have split it into more meaningful bins accroding to age groups.  
+However, we can see some clusters: people who prefer Earl Grey love taking lemon and sugar with their drink once a day. Black-tea lovers drink it sugarless and twice a day or more. Finally, unfrequent tea-takers (from 1 to 6 times a week) lean towards drinking it not at breakfast, not at home, and without any of the fancy stuff.
